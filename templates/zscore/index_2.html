@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bootstrap 101 Template</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link href="{{ STATIC_URL }}css/bootstrap.css" rel="stylesheet">
+    <link href='http://fonts.googleapis.com/css?family=Poiret+One|Quicksand:300|Lato:300' rel='stylesheet' type='text/css'>
+
+
+    <style type="text/css">
+        
+        /*Get rid of white margin upon resize. */
+        @media (max-width: 767px){
+            body {
+                padding-right: 0px;
+                padding-left: 0px;
+            }
+         }
+
+        html, body {
+            height: 100%;
+            font-family: 'Lato', sans-serif;
+            /*font-weight: 300;*/
+        }
+
+        .huge {
+            font-size: 40pt;
+        }
+
+        .score {
+            font-size: 85pt;
+            color: #55B95D;
+        }
+
+        .hoveredGoalGreen {
+            background-color: #55B95D;
+        }
+        .hoveredGoalRed {
+            background-color: #C0392B;
+        }
+        .hoveredGoalDark {
+            background-color: #333739;
+        }
+
+        .goalbox {
+            box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.3);
+        }
+
+        .test {
+            width: 17px;
+        }
+
+
+    </style>
+
+    
+  </head>
+  <body>
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h1 class="text-center huge">Hello Desmond, </h1>
+                <h1 class="text-center huge">Your Z Score for this week is</h1>
+
+            </div>
+        </div>
+        <div class="row fullscreen-bottom">
+            <div class="col-xs-12"></div>
+        </div>
+        <div class="row">            
+            <div class="col-xs-12">
+                <h1 class="text-center score">{{ zscore }}</h1>                
+            </div>
+        </div>
+        <div class="row" style="padding-top:20px; padding-bottom:45px;">
+            <div class="col-xs-4 col-xs-offset-4">
+                <!-- Button trigger modal -->
+                <button class="btn btn-primary" data-toggle="modal" data-target="#priorityModal">
+                    Add Priority
+                </button>
+                <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#goalModal">
+                    Add Goal
+                </button>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for p in priorityList %}
+            <div class="col-md-4 col-xs-12">
+                <div class="panel panel-default goalbox" id="priority-{{ p.id }}">
+                    <div class="panel-heading">{{ p.name }}<button type="button" value="{{ p.id }}"class="close pull-right deletePriority">&times;</button></div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            {% for goal in p.goal_set.all %}
+                            <li class="list-group-item goalItem" id="goal-{{ goal.id }}">
+                                <div class="row">
+                                    <div class="col-xs-8">
+                                        {{ goal.verb }} {{ goal.value }} {{ goal.unit }} per {{ goal.frequency }} | {{ goal.getProgress }}  {{ goal.getExpectedProgress }}
+                                    </div>
+                                <div class="col-xs-4">
+                                    <button type="button" value="{{ goal.id }}"class="close pull-right deleteGoal">&times;</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 col-md-7" style="padding-top:13px;">
+                                        <div class="progress">
+                                          <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: {{ goal.getProgress }}%">
+                                          </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xs-12 col-md-5" style="padding-top:8px;">
+                                        <div class="input-group">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-default btn-sm minusSnap" type="button" value="{{ goal.id }}">&minus;</button>
+                                            </span>
+                                            <input type="text" class="form-control input-sm text-center" id="snapshotField-{{ goal.id }}" placeholder="1">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-default btn-sm plusSnap" type="button" value="{{ goal.id }}">&plus;</button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </li>
+
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>                
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="goalModal" tabindex="-1" role="dialog" aria-labelledby="goalModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="goalModalLabel">Add a new goal!</h4>
+      </div>
+
+<form class="form-horizontal" role="form" method="post" action="/goal/add/" id="goalForm">
+    {% csrf_token %}
+      <div class="modal-body">
+        <span class="help-block">Break down your goals into the following format for easy tracking.</span>
+            <div class="form-group">
+                <label for="p-input" class="col-sm-offset-2 col-sm-2 control-label">Priority</label>
+                <div class="col-sm-6">
+                    <select id="p-input"class="form-control" name="priority">
+                        {% for p in priorityList %}
+                            <option>{{ p.name }}</option>
+                        {% endfor %}
+                    </select name="frequency">
+                </div>
+            </div>
+          <div class="form-group">
+            <label for="verb-input" class="col-sm-offset-2 col-sm-2 control-label">Verb</label>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="verb-input" placeholder="Run" name="verb">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="value-input" class="col-sm-offset-2 col-sm-2 control-label">Value</label>
+            <div class="col-sm-6">
+                <input type="text" id="value-input" class="form-control" placeholder="10" name="value">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="unit-input" class="col-sm-offset-2 col-sm-2 control-label">Units</label>
+            <div class="col-sm-6">
+                <input type="text" id="unit-input" class="form-control" placeholder="miles per" name="unit">
+            </div>
+          </div>
+            <div class="form-group">
+            <label for="freq-input" class="col-sm-offset-2 col-sm-2 control-label">Frequency</label>
+            <div class="col-sm-6">
+                <select class="form-control" name="frequency">
+                  <option>Day</option>
+                  <option>Week</option>
+                  <option>Month</option>
+                  <option>Year</option>
+                </select name="frequency">
+            </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Add   !</button>
+      </div>
+</form>
+
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<!-- Modal -->
+<div class="modal fade" id="priorityModal" tabindex="-1" role="dialog" aria-labelledby="priorityModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="priorityModalLabel">Add a new priority!</h4>
+      </div>
+
+<form class="form-horizontal" role="form" method="post" action="/priority/add/" id="priorityForm">
+    {% csrf_token %}
+      <div class="modal-body">
+        <span class="help-block">Every priority has a name and a current weight relative to your other priorities. </span>
+          <div class="form-group">
+            <label for="name-input" class="col-sm-offset-2 col-sm-2 control-label">Name</label>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="name-input" name="name" placeholder="Network Cultivation">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="value-input" class="col-sm-offset-2 col-sm-2 control-label">Weight</label>
+            <div class="col-sm-6">
+                <input type="text" id="value-input" class="form-control" name="weight" placeholder="87">
+            </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Add!</button>
+      </div>
+</form>
+
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="{{ STATIC_URL }}js/jquery_v1-10-2.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+
+
+
+        function postIt(url, data){
+            $('body').append($('<form/>', {
+              id: 'jQueryPostItForm',
+              method: 'POST',
+              action: url
+            }));
+            
+            $('#jQueryPostItForm').append($('<input/>', {
+                type: 'hidden',
+                name: 'id',
+                value: data
+            }));
+
+            $('#jQueryPostItForm').append($('<input/>', {
+                type: 'hidden',
+                name: 'csrfmiddlewaretoken',
+                value: "{{ csrf_token }}"
+            }));
+
+            $('#jQueryPostItForm').submit();
+        }
+
+        function postItSnapShot(url, data, progress){
+            $('body').append($('<form/>', {
+              id: 'jQueryPostItForm',
+              method: 'POST',
+              action: url
+            }));
+            
+            $('#jQueryPostItForm').append($('<input/>', {
+                type: 'hidden',
+                name: 'id',
+                value: data
+            }));
+            $('#jQueryPostItForm').append($('<input/>', {
+                type: 'hidden',
+                name: 'progress',
+                value: progress
+            }));
+
+
+            $('#jQueryPostItForm').append($('<input/>', {
+                type: 'hidden',
+                name: 'csrfmiddlewaretoken',
+                value: "{{ csrf_token }}"
+            }));
+
+            $('#jQueryPostItForm').submit();
+        }
+
+        $(".deleteGoal").click(function(){
+            postIt("/goal/delete/", $(this).val());
+        });
+        $(".deletePriority").click(function(){
+            postIt("/priority/delete/", $(this).val());
+        });
+
+        $(".plusSnap").click(function(){
+            var id = $(this).val();
+            if (!$("#snapshotField-"+id).val()) {
+                postItSnapShot("/snapshot/add/", id, 1);
+            }
+            else {
+                postItSnapShot("/snapshot/add/", id, $("#snapshotField-"+id).val());
+            }
+        });
+        $(".minusSnap").click(function(){
+            var id = $(this).val();
+            if (!$("#snapshotField-"+id).val()) {
+                postItSnapShot("/snapshot/add/", id, -1);
+            }
+            else {
+                postItSnapShot("/snapshot/add/",id, -1*parseInt($("#snapshotField-"+id).val()));
+            }
+        });
+
+        $( ".plusOneUnit" ).hover( function() {
+            $( this ).parent().parent().parent().addClass( "hoveredGoalGreen" );
+            }, function() {
+            $( this ).parent().parent().parent().removeClass( "hoveredGoalGreen" );
+        } );
+
+        $( ".minusOneUnit" ).hover( function() {
+            $( this ).parent().parent().parent().addClass( "hoveredGoalRed" );
+            }, function() {
+            $( this ).parent().parent().parent().removeClass( "hoveredGoalRed" );
+        } );
+
+
+    </script>
+  </body>
+</html>

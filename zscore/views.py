@@ -2,20 +2,27 @@ from django.template import Context, loader, RequestContext
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.core.context_processors import csrf
-from zscore.models import Priority, Goal, GoalSnapshot
+from zscore.models import Priority, Goal, GoalSnapshot, ZScoreSnapshot
 
 import datetime
+
+from django.utils import timezone
 
 def index(request):
     goals = Goal.objects.all()
 
+    scores = ZScoreSnapshot.objects.all().order_by("-date")
 
-    
+    presentZScore = None
+    if len(scores) == 0:
+        presentZScore = 85
+    else:
+        presentZScore = scores[0].value
     
     dictionary = {
         'empty' : "nothin",
         'priorityList' : Priority.objects.all(),
-        'zscore' : 85,
+        'zscore' : presentZScore,
     }
     c = Context(dictionary)
     c.update(csrf(request))
@@ -66,14 +73,61 @@ def priorityDelete(request):
     return redirect("/")
 
 def snapshotAdd(request):
+    # initial Values
+    dailyCost = -1.0
+    maxGain = 5.0
+
+
+    # Save a new snapshot for this goal
     post = request.POST
     g = Goal.objects.all().filter(id=int(post["id"])).get()
-
-    p = int(post["progress"])
-
-    newSnap = GoalSnapshot(goal=g, date=datetime.datetime.now(), progress=p)
-
+    progress = int(post["progress"])
+    newSnap = GoalSnapshot(goal=g, date=datetime.datetime.now(), progress=progress)
     newSnap.save()
+
+    # get weight of priority
+    priority = g.priority
+    weight = float(priority.currentWeight)
+    totWeights = sum([pIter.currentWeight for pIter in Priority.objects.all()])
+    normalizedWeight = weight / totWeights
+
+    # Get update amount
+    # first, find percent progress made towards goal
+    goalObjective = float(g.value)
+    percentProgress = progress / goalObjective
+
+    # Progress is based on percent towards maxGain
+    Fk = int(percentProgress * maxGain)
+
+    # weight based on priority
+    Fk = Fk * normalizedWeight
+
+    # get old Z Value
+    scores = ZScoreSnapshot.objects.all().order_by("-date")
+    
+    Zk = None
+    delta = None
+    if len(scores) == 0:
+        Zk = 85
+        delta = 0
+    else:
+        ZScoreSnap = scores[0]
+        ZScoreSnapDate = ZScoreSnap.date
+        Zk = ZScoreSnap.value
+
+        delta = abs((ZScoreSnapDate - timezone.now() + datetime.timedelta(1)).days)
+
+    # Lose 'dailycost' per day
+    # get number of days between updates
+    totalLoss = delta * dailyCost
+        
+    # update ZScore
+    Zk_1 = Zk + totalLoss + Fk
+
+    # save the new snapshot
+    ZSnap = ZScoreSnapshot(value=Zk_1, date=datetime.datetime.now())
+    ZSnap.save()
+
     return redirect("/")
 
 def snapshotDelete(request):

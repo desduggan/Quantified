@@ -74,7 +74,7 @@ class Goal(models.Model):
         if len(snaps) == 0:
             return 0
 
-        totalProgress = -1
+        totalProgress = 0
         if self.frequency == 'Month':
             # get first day in the month
             today = datetime.datetime.now()
@@ -131,7 +131,14 @@ class GoalSnapshot(models.Model):
         return str(self.progress) + " made on " + str(self.date)
         
 
+class ZScoreSnapshot(models.Model):
+    """docstring for ZScoreSnapshot"""
+    value = models.IntegerField('ZScore')
+    date = models.DateTimeField()
 
+    def __unicode__(self): 
+        return "ZScore from " + str(self.date) + ": " + str(self.value)
+        
 
 
 
